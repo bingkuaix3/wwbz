@@ -15,6 +15,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.catalina.User;
 
@@ -24,6 +25,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.jfinal.aop.Duang;
 import com.jfinal.core.Controller;
 import com.jfinal.kit.HttpKit;
+import com.jfinal.kit.PropKit;
 import com.jfinal.kit.StrKit;
 import com.jfinal.log.Log;
 import com.jfinal.plugin.activerecord.Db;
@@ -74,6 +76,7 @@ import com.wwbz.common.model.TransactionWwbz;
 import com.wwbz.common.model.UserWwbz;
 import com.wwbz.common.util.AES;
 import com.wwbz.common.util.AjaxResult;
+import com.wwbz.common.util.CertHttpUtil;
 import com.wwbz.common.util.PayUtil;
 import com.wwbz.common.util.StringUtils;
 import com.wwbz.common.util.WxPayConfig;
@@ -3682,5 +3685,63 @@ public class WxController extends Controller {
     		setAttr("result",0);
     	}
     	renderJson();
+	}
+	public void cashwithdrawal() {
+		String openid=getPara("openid");
+		int total=getParaToInt("total");
+		System.out.println("openid="+openid);
+		System.out.println("total="+total);
+		
+		String appid = PropKit.get("appid");  //微信公众号的appid
+        String mch_id = PropKit.get("mch_id");; //商户号
+        String nonce_str =  StringUtils.getRandomStringByLength(32); //生成随机数
+        String partner_trade_no =   StringUtils.getRandomStringByLength(32); //生成商户订单号
+        //String openid = openid; // 支付给用户openid
+        String check_name = "NO_CHECK"; //是否验证真实姓名呢
+        String re_user_name = "zyy";   //收款用户姓名
+        String amount = "100";              //企业付款金额，单位为分
+        String desc = "测试开发";   //企业付款操作说明信息。必填。
+        String spbill_create_ip = IpKit.getRealIp(getRequest());
+		// 部分安卓手机获取的ip地址是2个,字符串格式为"111.26.34.33, 123.151.76.158",
+		// 此处进行判断和修正,出现此问题的手机品牌为华为，安卓版本6.0,EMUI4.1
+		if (StrKit.isBlank(spbill_create_ip) || !StringUtils.Isipv4(spbill_create_ip)) {
+			if (spbill_create_ip.indexOf(',') > 0) {
+				spbill_create_ip = spbill_create_ip.substring(0, spbill_create_ip.indexOf(','));
+			}
+		}
+		if (StrKit.isBlank(spbill_create_ip) || !StringUtils.Isipv4(spbill_create_ip)) {
+			spbill_create_ip = "127.0.0.1";
+		}
+		Map<String, String> params = new HashMap<String, String>();
+		params.put("mch_appid", appid);         //微信公众号的appid
+		params.put("mchid", mch_id);       //商务号
+		params.put("nonce_str",nonce_str);  //随机生成后数字，保证安全性
+		params.put("partner_trade_no",partner_trade_no); //生成商户订单号
+		params.put("openid",openid);            // 支付给用户openid
+		params.put("check_name",check_name);    //是否验证真实姓名呢
+		params.put("re_user_name",re_user_name);//收款用户姓名
+		params.put("amount",amount);            //企业付款金额，单位为分
+		params.put("desc",desc);                //企业付款操作说明信息。必填。
+		params.put("spbill_create_ip",spbill_create_ip); //调用接口的机器Ip地址
+
+		params = PayUtil.paraFilter(params);
+		// 把数组所有元素，按照“参数=参数值”的模式用“&”字符拼接成字符串
+		String prestr = PayUtil.createLinkString(params);
+		// MD5运算生成签名，这里是第一次签名，用于调用统一下单接口
+		String sign = PayUtil.sign(prestr, WxPayConfig.key, "utf-8").toUpperCase();
+		System.out.println("=======================第一次签名：" + sign + "=====================");
+		// 拼接统一下单接口使用的xml数据，要将上一步生成的签名一起拼接进去
+		String xml = "<xml>" + "<mch_appid>" + appid + "</mch_appid>" + "<mchid>" + mch_id + "</mchid>"
+				+ "<nonce_str>" + nonce_str + "</nonce_str>"
+				+ "<partner_trade_no>" + partner_trade_no + "</partner_trade_no>" + "<openid>" + openid + "</openid>"
+				+ "<check_name>" + check_name + "</check_name>" + "<re_user_name>" + re_user_name
+				+ "</re_user_name>" + "<amount>" + amount + "</amount>" + "<desc>"
+				+ desc + "</desc>"+ "<spbill_create_ip>"+ spbill_create_ip + "</spbill_create_ip>" + "<sign>" + sign + "</sign>" + "</xml>";
+		System.out.println("调试模式_统一下单接口 请求XML数据：" + xml);
+		// 调用统一下单接口，并接受返回的结果
+		//String result = PayUtil.httpRequest(PropKit.get("wxUrl"), "POST", xml);
+		String result =CertHttpUtil.ssl(PropKit.get("wxUrl"), xml);
+		System.out.println("调试模式_统一下单接口 返回XML数据：" + result);
+		renderJson();
 	}
 }

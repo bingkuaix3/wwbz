@@ -44,5 +44,8 @@
 	<classpathentry kind="lib" path="WebRoot/WEB-INF/lib/velocity-1.7.jar"/>
 	<classpathentry kind="lib" path="WebRoot/WEB-INF/lib/weixin4j-0.0.9.1.jar"/>
 	<classpathentry kind="lib" path="WebRoot/WEB-INF/lib/fastjson-1.2.31.jar"/>
+	<classpathentry kind="lib" path="WebRoot/WEB-INF/lib/httpclient-4.5.3.jar"/>
+	<classpathentry kind="lib" path="WebRoot/WEB-INF/lib/httpcore-4.4.6.jar"/>
+	<classpathentry kind="lib" path="WebRoot/WEB-INF/lib/commons-logging-1.2.jar"/>
 	<classpathentry kind="output" path="WebRoot/WEB-INF/classes"/>
 </classpath>
